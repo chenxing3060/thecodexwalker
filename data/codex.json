@@ -1,0 +1,28 @@
+{
+  "codex_entries": [
+    {
+      "id": "meme_pollution",
+      "title": "模因污染",
+      "description": "一种通过故事、传说或任何信息载体传播的现实扭曲现象。当一个“故事原型”获得足够强的共识或情感能量时，它会开始侵蚀现实，将其转化为故事的一部分。三级污染是需要“行者”介入的临界点。",
+      "unlocked": false
+    },
+    {
+      "id": "reality_stability",
+      "title": "现实稳定度",
+      "description": "衡量当前现实世界抵抗模因污染侵蚀能力的基准值。该数值越低，现实世界就越容易被改写。低于60%被认为是危险水平。",
+      "unlocked": false
+    },
+    {
+      "id": "codex_walker",
+      "title": "万象行者",
+      "description": "能够穿行于现实与故事层面之间，处理“模因污染”的特殊个体。他们通过“圣痕共鸣”协议，将自身认知作为锚点，稳定并修复被污染的现实书页。",
+      "unlocked": false
+    },
+    {
+      "id": "aristotle_ai",
+      "title": "亚里士多德 (AI)",
+      "description": "负责管理和授权“万象行者”行动的总部超级人工智能。它监控着所有现实书页的稳定度，并根据威胁等级下达指令。",
+      "unlocked": false
+    }
+  ]
+}
