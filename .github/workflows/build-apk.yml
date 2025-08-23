@@ -52,16 +52,32 @@ jobs:
         npm install -g cordova@latest
         cordova telemetry off
         
-    - name: Install Cordova dependencies
-      working-directory: cordova-build/thecodexwalker
-      run: npm install
+    - name: Create Cordova project
+      run: |
+        cordova create thecodexwalker com.thecodexwalker.app "The Codex Walker"
+        
+    - name: Copy web assets to Cordova www
+      run: |
+        # 清空www目录
+        rm -rf thecodexwalker/www/*
+        
+        # 复制主项目文件到www目录
+        cp index.html thecodexwalker/www/
+        cp game.html thecodexwalker/www/
+        cp about.html thecodexwalker/www/
+        cp ending_credits.html thecodexwalker/www/
+        cp style.css thecodexwalker/www/
+        cp -r css thecodexwalker/www/
+        cp -r js thecodexwalker/www/
+        cp -r data thecodexwalker/www/
+        cp -r game thecodexwalker/www/
         
     - name: Add Android platform
-      working-directory: cordova-build/thecodexwalker
+      working-directory: thecodexwalker
       run: cordova platform add android@latest
         
     - name: Install Cordova plugins
-      working-directory: cordova-build/thecodexwalker
+      working-directory: thecodexwalker
       run: |
         cordova plugin add cordova-plugin-whitelist
         cordova plugin add cordova-plugin-splashscreen
@@ -69,26 +85,8 @@ jobs:
         cordova plugin add cordova-plugin-device
         cordova plugin add cordova-plugin-network-information
         
-    - name: Copy web assets to Cordova www
-      working-directory: cordova-build/thecodexwalker
-      run: |
-        # 清空www目录但保留cordova.js等必要文件
-        find www -name '*.html' -o -name '*.css' -o -name '*.js' -not -name 'cordova.js' | xargs rm -f
-        rm -rf www/css www/js www/data www/game
-        
-        # 复制主项目文件到www目录
-        cp ../../index.html www/
-        cp ../../game.html www/
-        cp ../../about.html www/
-        cp ../../ending_credits.html www/
-        cp ../../style.css www/
-        cp -r ../../css www/
-        cp -r ../../js www/
-        cp -r ../../data www/
-        cp -r ../../game www/
-        
     - name: Update version in config.xml
-      working-directory: cordova-build/thecodexwalker
+      working-directory: thecodexwalker
       run: |
         VERSION="${{ github.event.inputs.version || '1.4.0' }}"
         VERSION_CODE=$(echo $VERSION | sed 's/\.//g')
@@ -96,7 +94,7 @@ jobs:
         sed -i "s/android-versionCode=\"[^\"]*\"/android-versionCode=\"$VERSION_CODE\"/g" config.xml
         
     - name: Build APK
-      working-directory: cordova-build/thecodexwalker
+      working-directory: thecodexwalker
       run: |
         BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
         if [ "$BUILD_TYPE" = "release" ]; then
@@ -107,7 +105,7 @@ jobs:
         
     - name: Find APK files
       id: find_apk
-      working-directory: cordova-build/thecodexwalker
+      working-directory: thecodexwalker
       run: |
         BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
         if [ "$BUILD_TYPE" = "release" ]; then
@@ -124,7 +122,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ steps.find_apk.outputs.apk_name }}
-        path: cordova-build/thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
+        path: thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
         
     - name: Create Release
       if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
@@ -148,7 +146,7 @@ jobs:
           ### 在线体验
           [GitHub Pages版本](https://chenxing3060.github.io/thecodexwalker/game.html)
         files: |
-          cordova-build/thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
+          thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
         draft: false
         prerelease: false
       env:
