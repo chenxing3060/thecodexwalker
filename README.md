@@ -113,13 +113,9 @@ npx http-server -p 8000
 - `act1.json` - `act4.json`：各幕剧情数据
 - `codex.json`：游戏百科数据
 
-### 开发工具
+### 开发说明
 
-项目包含以下开发辅助脚本：
-- `check_video_quality.sh`：检查视频质量
-- `compress_videos.sh`：压缩视频文件
-- `replace_videos.sh`：批量替换视频
-- `rollback_videos.sh`：回滚视频更改
+本项目为纯HTML5 Web游戏，无需额外的构建工具或编译步骤。所有资源文件都已优化，可直接在浏览器中运行。
 
 ## 注意事项
 

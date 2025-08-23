@@ -1,0 +1,161 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.4.0)'
+        required: false
+        default: '1.4.0'
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+        - release
+        - debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        build-tools: 35.0.0
+        
+    - name: Install Cordova CLI
+      run: |
+        npm install -g cordova@latest
+        cordova telemetry off
+        
+    - name: Navigate to Cordova project
+      run: cd cordova-build/thecodexwalker
+      
+    - name: Install Cordova dependencies
+      run: |
+        cd cordova-build/thecodexwalker
+        npm install
+        
+    - name: Add Android platform
+      run: |
+        cd cordova-build/thecodexwalker
+        cordova platform add android@latest
+        
+    - name: Install Cordova plugins
+      run: |
+        cd cordova-build/thecodexwalker
+        cordova plugin add cordova-plugin-whitelist
+        cordova plugin add cordova-plugin-splashscreen
+        cordova plugin add cordova-plugin-statusbar
+        cordova plugin add cordova-plugin-device
+        cordova plugin add cordova-plugin-network-information
+        
+    - name: Copy web assets to Cordova www
+      run: |
+        cd cordova-build/thecodexwalker
+        # 清空www目录但保留cordova.js等必要文件
+        find www -name '*.html' -o -name '*.css' -o -name '*.js' -not -name 'cordova.js' | xargs rm -f
+        rm -rf www/css www/js www/data www/game
+        
+        # 复制主项目文件到www目录
+        cp ../../index.html www/
+        cp ../../game.html www/
+        cp ../../about.html www/
+        cp ../../ending_credits.html www/
+        cp ../../style.css www/
+        cp -r ../../css www/
+        cp -r ../../js www/
+        cp -r ../../data www/
+        cp -r ../../game www/
+        
+    - name: Update version in config.xml
+      run: |
+        cd cordova-build/thecodexwalker
+        VERSION="${{ github.event.inputs.version || '1.4.0' }}"
+        VERSION_CODE=$(echo $VERSION | sed 's/\.//g')
+        sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/g" config.xml
+        sed -i "s/android-versionCode=\"[^\"]*\"/android-versionCode=\"$VERSION_CODE\"/g" config.xml
+        
+    - name: Build APK
+      run: |
+        cd cordova-build/thecodexwalker
+        BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+        if [ "$BUILD_TYPE" = "release" ]; then
+          cordova build android --release
+        else
+          cordova build android --debug
+        fi
+        
+    - name: Find APK files
+      id: find_apk
+      run: |
+        cd cordova-build/thecodexwalker
+        BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+        if [ "$BUILD_TYPE" = "release" ]; then
+          APK_PATH=$(find platforms/android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK_NAME="thecodexwalker-release.apk"
+        else
+          APK_PATH=$(find platforms/android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+          APK_NAME="thecodexwalker-debug.apk"
+        fi
+        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+        echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+        
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.find_apk.outputs.apk_name }}
+        path: cordova-build/thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
+        name: Release ${{ github.event.inputs.version || github.ref_name }}
+        body: |
+          ## 万象行者 - The Codex Walker
+          
+          ### 更新内容
+          - 自动构建的Android APK
+          - 版本: ${{ github.event.inputs.version || github.ref_name }}
+          - 构建类型: ${{ github.event.inputs.build_type || 'release' }}
+          
+          ### 安装说明
+          1. 下载对应的APK文件
+          2. 在Android设备上启用"未知来源"安装
+          3. 安装APK文件
+          
+          ### 在线体验
+          [GitHub Pages版本](https://chenxing3060.github.io/thecodexwalker/game.html)
+        files: |
+          cordova-build/thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

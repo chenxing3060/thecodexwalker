@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>万象行者 - The Codex Walker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/game-ui.css">
+</head>
+<body>
+    <!-- 初始加载界面 -->
+    <div id="initial-loading" class="screen">
+        <!-- 法典符文背景层 -->
+        <div class="codex-background">
+            <div class="rune-layer rune-layer-1"></div>
+            <div class="rune-layer rune-layer-2"></div>
+            <div class="rune-layer rune-layer-3"></div>
+        </div>
+        
+        <!-- 认知圈境效果 -->
+        <div class="cognitive-sphere">
+            <div class="sphere-ring sphere-ring-1"></div>
+            <div class="sphere-ring sphere-ring-2"></div>
+            <div class="sphere-ring sphere-ring-3"></div>
+        </div>
+        
+        <!-- 故事碎片流动效果 -->
+        <div class="story-fragments">
+            <div class="fragment fragment-1">📚</div>
+            <div class="fragment fragment-2">⚡</div>
+            <div class="fragment fragment-3">🌀</div>
+            <div class="fragment fragment-4">✨</div>
+            <div class="fragment fragment-5">🔮</div>
+            <div class="fragment fragment-6">📖</div>
+        </div>
+        
+        <div class="loading-content">
+            <!-- 法典标识 -->
+            <div class="codex-emblem">
+                <div class="emblem-outer-ring"></div>
+                <div class="emblem-inner-ring"></div>
+                <div class="emblem-core">CDX</div>
+            </div>
+            
+            <div class="loading-logo">
+                <h1 class="main-title">万象行者</h1>
+                <p class="sub-title">The Codex Walker</p>
+                <p class="world-desc">「现实之下，故事为王」</p>
+            </div>
+            
+            <!-- 认知同步进度 -->
+            <div class="loading-progress">
+                <div class="sync-status">
+                    <span class="sync-label">认知同步进度</span>
+                    <span class="sync-percentage">0%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                        <div class="progress-glow"></div>
+                    </div>
+                    <div class="progress-runes">
+                        <span class="rune">◊</span>
+                        <span class="rune">◈</span>
+                        <span class="rune">◇</span>
+                        <span class="rune">◆</span>
+                    </div>
+                </div>
+                <p class="loading-text">正在初始化法典连接...</p>
+            </div>
+            
+            <!-- 系统状态指示 -->
+            <div class="system-status">
+                <div class="status-item">
+                    <span class="status-dot"></span>
+                    <span class="status-text">现实稳定度检测中...</span>
+                </div>
+            </div>
+
+            <!-- 新的进入提示，将在这里动态显示 -->
+            <div id="enter-prompt" class="hidden">
+                <p class="enter-prompt-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关于页面 -->
+    <div id="about-screen" class="screen hidden">
+        <!-- 内容将由 UIManager 动态加载 -->
+    </div>
+
+    <!-- 开始菜单 -->
+    <div id="start-menu" class="screen hidden">
+        <!-- 渐变背景（备选方案） -->
+        <div id="gradient-bg" class="gradient-background"></div>
+        
+        <!-- 开始菜单视频 -->
+        <video id="start-video" class="start-video" loop playsinline muted>
+            <source src="game/videos/ui/ui_opening.mp4" type="video/mp4">
+            您的浏览器不支持视频播放。
+        </video>
+        
+        <!-- 音乐控制按钮 -->
+        <div class="music-control">
+            <button id="music-toggle-menu" class="music-btn">
+                <span class="music-icon">🎵</span>
+            </button>
+        </div>
+        
+
+        
+        <!-- 开始菜单内容 -->
+        <div class="start-content">
+            <div class="menu-buttons">
+                <button id="start-game" class="menu-button primary">开始游戏</button>
+                <button id="about" class="menu-button">关于</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主游戏界面 -->
+    <div id="game-screen" class="screen" style="display: none;">
+        <!-- 背景 -->
+        <div id="background" class="game-background"></div>
+        
+        <!-- 对话框 -->
+        <div id="dialogue-box" class="dialogue-container">
+            <div class="dialogue-header">
+                <span id="speaker-name" class="speaker-name"></span>
+            </div>
+            <div class="dialogue-content">
+                <p id="dialogue-text" class="dialogue-text"></p>
+            </div>
+            <!-- 对话结束/播放控制智能图标 -->
+            <div id="next-indicator" class="next-indicator indicator-hidden">
+                <span class="icon play-icon">▶</span>
+                <span class="icon pause-icon">❚❚</span>
+            </div>
+        </div>
+
+        <!-- 选择框 -->
+        <div id="choice-container" class="choice-container" style="display: none;">
+            <!-- 选择按钮将动态生成 -->
+        </div>
+
+        <!-- 顶部控制按钮 -->
+        <div class="top-controls">
+            <button id="back-to-menu" class="top-control-button back-btn">
+                <span class="btn-icon">←</span>
+                <span class="btn-text">返回</span>
+            </button>
+        </div>
+        
+        <!-- 音乐控制按钮（独立定位） -->
+        <div class="music-control">
+            <button id="music-toggle-game" class="music-btn">
+                <span class="music-icon">🎵</span>
+            </button>
+        </div>
+
+        <!-- 进度指示器 -->
+        <div class="progress-indicator" style="display: none;">
+            <div class="route-progress">
+                <span id="current-route">当前路线: 主线</span>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 视频播放器 -->
+    <div id="video-player" class="screen" style="display: none;">
+        <video id="game-video" controls autoplay>
+            <source src="" type="video/mp4">
+            <source src="" type="video/webm">
+            您的浏览器不支持视频播放。
+        </video>
+        <div class="video-controls">
+            <button id="skip-video" class="control-button">跳过</button>
+        </div>
+    </div>
+
+    <!-- 路线选择界面 -->
+    <div id="route-selection" class="screen" style="display: none;">
+        <div class="route-selection-content">
+            <h2>选择你想要的故事路线</h2>
+            <div id="route-list" class="route-list">
+                <!-- 路线选项将动态生成 -->
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 保存/读取菜单 -->
+    <div id="save-menu" class="screen overlay" style="display: none;">
+        <div class="save-menu-content">
+            <h2 id="save-menu-title">保存游戏</h2>
+            <div id="save-slots" class="save-slots">
+                <!-- 存档槽将动态生成 -->
+            </div>
+            <button id="close-save-menu" class="menu-button">关闭</button>
+        </div>
+    </div>
+
+    <!-- 设置菜单 -->
+    <div id="settings-menu" class="screen overlay" style="display: none;">
+        <div class="settings-content">
+            <h2>游戏设置</h2>
+            <div class="setting-group">
+                <label>文字速度:</label>
+                <input type="range" id="text-speed" min="10" max="100" value="50">
+            </div>
+            <div class="setting-group">
+                <label>全屏模式:</label>
+                <input type="checkbox" id="fullscreen-mode">
+            </div>
+            <button id="close-settings" class="menu-button">关闭</button>
+        </div>
+    </div>
+
+    <!-- 游戏内菜单 -->
+    <div id="game-menu" class="screen overlay" style="display: none;">
+        <div class="game-menu-content">
+            <h2>游戏菜单</h2>
+            <div class="menu-buttons">
+                <button id="resume-game" class="menu-button">继续游戏</button>
+                <button id="save-game-menu" class="menu-button">保存游戏</button>
+                <button id="load-game-menu" class="menu-button">读取游戏</button>
+                <button id="game-settings" class="menu-button">设置</button>
+                <button id="return-title" class="menu-button">返回标题</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面过渡效果系统 -->
+    <div id="transition-overlay" class="transition-overlay">
+        <div class="transition-loader">
+            <span id="transition-text">加载中...</span>
+        </div>
+    </div>
+
+
+
+    <!-- 音频系统已移除 -->
+
+    <!-- 名词解释弹窗 -->
+    <div id="codex-modal" class="codex-modal-overlay hidden">
+        <div class="codex-modal-content">
+            <button id="codex-close" class="codex-close-button">&times;</button>
+            <h2 id="codex-title" class="codex-title"></h2>
+            <p id="codex-content" class="codex-text"></p>
+        </div>
+    </div>
+
+    <!-- 按依赖顺序加载所有JavaScript文件 -->
+    <script src="js/EmbeddedGameData.js"></script>
+    <script src="js/GameStateManager.js"></script>
+    <script src="js/RouteManager.js"></script>
+    <script src="js/SceneDataManager.js"></script>
+    <script src="js/MusicManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/ScenePlayer.js"></script>
+    <script src="js/AssetLoader.js"></script>
+    <script src="js/TransitionManager.js"></script>
+    <script src="js/GameController.js"></script>
+    <script>
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM加载完成，开始初始化游戏');
+            // 实例化游戏控制器
+            window.gameController = new GameController();
+        });
+    </script>
+</body>
+</html>
