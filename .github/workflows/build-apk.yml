@@ -44,7 +44,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        api-level: 34
+        api-level: 33
         build-tools: 33.0.2
         
     - name: Install Cordova CLI
@@ -74,7 +74,7 @@ jobs:
         
     - name: Add Android platform
       working-directory: thecodexwalker
-      run: cordova platform add android@latest
+      run: cordova platform add android@12.0.1
         
     - name: Configure config.xml
       working-directory: thecodexwalker
@@ -99,11 +99,11 @@ jobs:
             <platform name="android">
                 <allow-intent href="market:*" />
                 <preference name="android-minSdkVersion" value="22" />
-                <preference name="android-targetSdkVersion" value="34" />
+                <preference name="android-targetSdkVersion" value="33" />
             </platform>
             <preference name="DisallowOverscroll" value="true" />
             <preference name="android-minSdkVersion" value="22" />
-            <preference name="android-targetSdkVersion" value="34" />
+            <preference name="android-targetSdkVersion" value="33" />
             <preference name="SplashMaintainAspectRatio" value="true" />
             <preference name="FadeSplashScreenDuration" value="300" />
             <preference name="SplashShowOnlyFirstTime" value="false" />
@@ -115,11 +115,31 @@ jobs:
     - name: Install Cordova plugins
       working-directory: thecodexwalker
       run: |
-        cordova plugin add cordova-plugin-whitelist@latest
-        cordova plugin add cordova-plugin-splashscreen@latest
-        cordova plugin add cordova-plugin-statusbar@latest
-        cordova plugin add cordova-plugin-device@latest
-        cordova plugin add cordova-plugin-network-information@latest
+        cordova plugin add cordova-plugin-whitelist@1.3.5
+        cordova plugin add cordova-plugin-splashscreen@6.0.2
+        cordova plugin add cordova-plugin-statusbar@4.0.0
+        cordova plugin add cordova-plugin-device@2.1.0
+        
+    - name: Configure Android build
+      working-directory: thecodexwalker
+      run: |
+        # 创建自定义的build-extras.gradle来解决编译问题
+        cat > platforms/android/app/build-extras.gradle << 'EOF'
+        android {
+            compileSdkVersion 33
+            buildToolsVersion "33.0.2"
+            
+            defaultConfig {
+                minSdkVersion 22
+                targetSdkVersion 33
+            }
+            
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+        EOF
         
     - name: Update version in config.xml
       working-directory: thecodexwalker
