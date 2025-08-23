@@ -151,6 +151,15 @@ jobs:
         mkdir -p platforms/android/app
         mkdir -p platforms/android/gradle/wrapper
         
+        # 强制设置Gradle版本为8.4（与Cordova Android 12.0.1兼容）
+        cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+        distributionBase=GRADLE_USER_HOME
+        distributionPath=wrapper/dists
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip
+        zipStoreBase=GRADLE_USER_HOME
+        zipStorePath=wrapper/dists
+        EOF
+        
         # 创建自定义的build-extras.gradle来解决编译问题
         cat > platforms/android/app/build-extras.gradle << 'EOF'
         android {
@@ -189,6 +198,7 @@ jobs:
         dependencies {
             implementation 'org.apache.commons:commons-lang3:3.12.0'
             implementation 'org.codehaus.groovy:groovy-xml:3.0.9'
+            implementation 'org.codehaus.groovy:groovy:3.0.9'
         }
         EOF
         
@@ -204,36 +214,60 @@ jobs:
         android.builder.sdkDownload=true
         EOF
         
-        # 配置Gradle Wrapper版本（使用与Cordova Android 12.0.1兼容的版本）
-        if [ -f platforms/android/gradle/wrapper/gradle-wrapper.properties ]; then
-          sed -i 's/gradle-.*-all.zip/gradle-8.4-all.zip/g' platforms/android/gradle/wrapper/gradle-wrapper.properties
-        else
-          # 如果文件不存在，创建一个
-          cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-        distributionBase=GRADLE_USER_HOME
-        distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip
-        zipStoreBase=GRADLE_USER_HOME
-        zipStorePath=wrapper/dists
-        EOF
-        fi
+        # 创建一个修复XmlParser问题的脚本
+        cat > fix_cordova_gradle.sh << 'EOF'
+        #!/bin/bash
         
-        # 创建自定义的cordova.gradle文件来解决XmlParser问题
-        if [ -f platforms/android/CordovaLib/cordova.gradle ]; then
+        # 等待Cordova平台文件生成
+        sleep 10
+        
+        # 查找并修复所有可能的cordova.gradle文件
+        find platforms/android -name "cordova.gradle" -type f | while read gradle_file; do
+          echo "Processing: $gradle_file"
+          
           # 备份原文件
-          cp platforms/android/CordovaLib/cordova.gradle platforms/android/CordovaLib/cordova.gradle.backup
+          cp "$gradle_file" "${gradle_file}.backup"
           
-          # 在文件开头添加必要的导入
-          cat > platforms/android/CordovaLib/cordova.gradle << 'EOF'
-        import groovy.util.XmlParser
-        import groovy.util.XmlSlurper
-        import groovy.xml.XmlUtil
+          # 检查文件是否已经包含导入语句
+          if ! grep -q "import groovy.util.XmlParser" "$gradle_file"; then
+            # 在文件开头添加必要的导入
+            {
+              echo "import groovy.util.XmlParser"
+              echo "import groovy.util.XmlSlurper" 
+              echo "import groovy.xml.XmlUtil"
+              echo ""
+              cat "${gradle_file}.backup"
+            } > "$gradle_file"
+            echo "Added imports to: $gradle_file"
+          else
+            echo "Imports already exist in: $gradle_file"
+          fi
+        done
         
+        # 同时处理可能的build.gradle文件
+        find platforms/android -name "build.gradle" -type f | while read gradle_file; do
+          if grep -q "XmlParser\|XmlSlurper" "$gradle_file" 2>/dev/null; then
+            echo "Processing build.gradle: $gradle_file"
+            
+            # 备份原文件
+            cp "$gradle_file" "${gradle_file}.backup"
+            
+            # 检查并添加导入
+            if ! grep -q "import groovy.util.XmlParser" "$gradle_file"; then
+              {
+                echo "import groovy.util.XmlParser"
+                echo "import groovy.util.XmlSlurper"
+                echo "import groovy.xml.XmlUtil"
+                echo ""
+                cat "${gradle_file}.backup"
+              } > "$gradle_file"
+              echo "Added imports to build.gradle: $gradle_file"
+            fi
+          fi
+        done
         EOF
-          
-          # 将原文件内容追加到新文件
-          cat platforms/android/CordovaLib/cordova.gradle.backup >> platforms/android/CordovaLib/cordova.gradle
-        fi
+        
+        chmod +x fix_cordova_gradle.sh
         
     - name: Update version in config.xml
       working-directory: thecodexwalker
@@ -242,6 +276,19 @@ jobs:
         VERSION_CODE=$(echo $VERSION | sed 's/\.//g')
         sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/g" config.xml
         sed -i "s/android-versionCode=\"[^\"]*\"/android-versionCode=\"$VERSION_CODE\"/g" config.xml
+        
+    - name: Fix XmlParser issues
+      working-directory: thecodexwalker
+      run: |
+        echo "Running XmlParser fix script..."
+        ./fix_cordova_gradle.sh
+        
+        # 验证修复结果
+        echo "Checking for cordova.gradle files:"
+        find platforms/android -name "cordova.gradle" -type f -exec echo "Found: {}" \;
+        
+        # 显示修复后的文件内容（前几行）
+        find platforms/android -name "cordova.gradle" -type f -exec sh -c 'echo "=== Content of {} ==="; head -10 "$1"' _ {} \;
         
     - name: Build APK
       working-directory: thecodexwalker
