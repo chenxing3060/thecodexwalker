@@ -35,6 +35,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache-dependency-path: 'cordova-build/thecodexwalker/package-lock.json'
         
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -53,22 +54,17 @@ jobs:
         npm install -g cordova@latest
         cordova telemetry off
         
-    - name: Navigate to Cordova project
-      run: cd cordova-build/thecodexwalker
-      
     - name: Install Cordova dependencies
-      run: |
-        cd cordova-build/thecodexwalker
-        npm install
+      working-directory: cordova-build/thecodexwalker
+      run: npm install
         
     - name: Add Android platform
-      run: |
-        cd cordova-build/thecodexwalker
-        cordova platform add android@latest
+      working-directory: cordova-build/thecodexwalker
+      run: cordova platform add android@latest
         
     - name: Install Cordova plugins
+      working-directory: cordova-build/thecodexwalker
       run: |
-        cd cordova-build/thecodexwalker
         cordova plugin add cordova-plugin-whitelist
         cordova plugin add cordova-plugin-splashscreen
         cordova plugin add cordova-plugin-statusbar
@@ -76,8 +72,8 @@ jobs:
         cordova plugin add cordova-plugin-network-information
         
     - name: Copy web assets to Cordova www
+      working-directory: cordova-build/thecodexwalker
       run: |
-        cd cordova-build/thecodexwalker
         # 清空www目录但保留cordova.js等必要文件
         find www -name '*.html' -o -name '*.css' -o -name '*.js' -not -name 'cordova.js' | xargs rm -f
         rm -rf www/css www/js www/data www/game
@@ -94,16 +90,16 @@ jobs:
         cp -r ../../game www/
         
     - name: Update version in config.xml
+      working-directory: cordova-build/thecodexwalker
       run: |
-        cd cordova-build/thecodexwalker
         VERSION="${{ github.event.inputs.version || '1.4.0' }}"
         VERSION_CODE=$(echo $VERSION | sed 's/\.//g')
         sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/g" config.xml
         sed -i "s/android-versionCode=\"[^\"]*\"/android-versionCode=\"$VERSION_CODE\"/g" config.xml
         
     - name: Build APK
+      working-directory: cordova-build/thecodexwalker
       run: |
-        cd cordova-build/thecodexwalker
         BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
         if [ "$BUILD_TYPE" = "release" ]; then
           cordova build android --release
@@ -113,8 +109,8 @@ jobs:
         
     - name: Find APK files
       id: find_apk
+      working-directory: cordova-build/thecodexwalker
       run: |
-        cd cordova-build/thecodexwalker
         BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
         if [ "$BUILD_TYPE" = "release" ]; then
           APK_PATH=$(find platforms/android/app/build/outputs/apk/release -name "*.apk" | head -1)
