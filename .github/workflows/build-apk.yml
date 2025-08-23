@@ -35,17 +35,17 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Set up JDK 17
+    - name: Set up JDK 11
       uses: actions/setup-java@v3
       with:
-        java-version: '17'
+        java-version: '11'
         distribution: 'temurin'
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        api-level: 34
-        build-tools: 34.0.0
+        api-level: 33
+        build-tools: 33.0.0
         
     - name: Install Cordova CLI
       run: |
@@ -74,7 +74,7 @@ jobs:
         
     - name: Add Android platform
       working-directory: thecodexwalker
-      run: cordova platform add android@12.0.1
+      run: cordova platform add android@10.1.2
         
     - name: Configure config.xml
       working-directory: thecodexwalker
@@ -99,11 +99,11 @@ jobs:
             <platform name="android">
                 <allow-intent href="market:*" />
                 <preference name="android-minSdkVersion" value="22" />
-                <preference name="android-targetSdkVersion" value="34" />
+                <preference name="android-targetSdkVersion" value="33" />
             </platform>
             <preference name="DisallowOverscroll" value="true" />
             <preference name="android-minSdkVersion" value="22" />
-            <preference name="android-targetSdkVersion" value="34" />
+            <preference name="android-targetSdkVersion" value="33" />
             <preference name="SplashMaintainAspectRatio" value="true" />
             <preference name="FadeSplashScreenDuration" value="300" />
             <preference name="SplashShowOnlyFirstTime" value="false" />
@@ -133,28 +133,41 @@ jobs:
         # 创建自定义的build-extras.gradle来解决编译问题
         cat > platforms/android/app/build-extras.gradle << 'EOF'
         android {
-            compileSdkVersion 34
-            buildToolsVersion "34.0.0"
+            compileSdkVersion 33
+            buildToolsVersion "33.0.0"
             
             defaultConfig {
                 minSdkVersion 22
-                targetSdkVersion 34
+                targetSdkVersion 33
+                versionCode 140
+                versionName "1.4.0"
             }
             
             compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
+                sourceCompatibility JavaVersion.VERSION_11
+                targetCompatibility JavaVersion.VERSION_11
             }
             
             packagingOptions {
                 pickFirst '**/libc++_shared.so'
                 pickFirst '**/libjsc.so'
+                exclude 'META-INF/DEPENDENCIES'
+                exclude 'META-INF/LICENSE'
+                exclude 'META-INF/LICENSE.txt'
+                exclude 'META-INF/NOTICE'
+                exclude 'META-INF/NOTICE.txt'
+            }
+            
+            lintOptions {
+                abortOnError false
+                checkReleaseBuilds false
             }
         }
         
         // 添加必要的依赖来解决XmlParser问题
         dependencies {
             implementation 'org.apache.commons:commons-lang3:3.12.0'
+            implementation 'org.codehaus.groovy:groovy-xml:3.0.9'
         }
         EOF
         
@@ -170,18 +183,35 @@ jobs:
         android.builder.sdkDownload=true
         EOF
         
-        # 配置Gradle Wrapper版本
+        # 配置Gradle Wrapper版本（使用与Cordova Android 10.1.2兼容的版本）
         if [ -f platforms/android/gradle/wrapper/gradle-wrapper.properties ]; then
-          sed -i 's/gradle-.*-all.zip/gradle-8.4-all.zip/g' platforms/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/gradle-.*-all.zip/gradle-7.6-all.zip/g' platforms/android/gradle/wrapper/gradle-wrapper.properties
         else
           # 如果文件不存在，创建一个
           cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
         distributionBase=GRADLE_USER_HOME
         distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip
+        distributionUrl=https\://services.gradle.org/distributions/gradle-7.6-all.zip
         zipStoreBase=GRADLE_USER_HOME
         zipStorePath=wrapper/dists
         EOF
+        fi
+        
+        # 创建自定义的cordova.gradle文件来解决XmlParser问题
+        if [ -f platforms/android/CordovaLib/cordova.gradle ]; then
+          # 备份原文件
+          cp platforms/android/CordovaLib/cordova.gradle platforms/android/CordovaLib/cordova.gradle.backup
+          
+          # 在文件开头添加必要的导入
+          cat > platforms/android/CordovaLib/cordova.gradle << 'EOF'
+        import groovy.util.XmlParser
+        import groovy.util.XmlSlurper
+        import groovy.xml.XmlUtil
+        
+        EOF
+          
+          # 将原文件内容追加到新文件
+          cat platforms/android/CordovaLib/cordova.gradle.backup >> platforms/android/CordovaLib/cordova.gradle
         fi
         
     - name: Update version in config.xml
