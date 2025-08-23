@@ -35,17 +35,17 @@ jobs:
       with:
         node-version: '18'
         
-    - name: Set up JDK 11
+    - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        api-level: 33
-        build-tools: 33.0.2
+        api-level: 34
+        build-tools: 34.0.0
         
     - name: Install Cordova CLI
       run: |
@@ -74,7 +74,7 @@ jobs:
         
     - name: Add Android platform
       working-directory: thecodexwalker
-      run: cordova platform add android@11.0.0
+      run: cordova platform add android@12.0.1
         
     - name: Configure config.xml
       working-directory: thecodexwalker
@@ -99,11 +99,11 @@ jobs:
             <platform name="android">
                 <allow-intent href="market:*" />
                 <preference name="android-minSdkVersion" value="22" />
-                <preference name="android-targetSdkVersion" value="33" />
+                <preference name="android-targetSdkVersion" value="34" />
             </platform>
             <preference name="DisallowOverscroll" value="true" />
             <preference name="android-minSdkVersion" value="22" />
-            <preference name="android-targetSdkVersion" value="33" />
+            <preference name="android-targetSdkVersion" value="34" />
             <preference name="SplashMaintainAspectRatio" value="true" />
             <preference name="FadeSplashScreenDuration" value="300" />
             <preference name="SplashShowOnlyFirstTime" value="false" />
@@ -133,17 +133,17 @@ jobs:
         # 创建自定义的build-extras.gradle来解决编译问题
         cat > platforms/android/app/build-extras.gradle << 'EOF'
         android {
-            compileSdkVersion 33
-            buildToolsVersion "33.0.2"
+            compileSdkVersion 34
+            buildToolsVersion "34.0.0"
             
             defaultConfig {
                 minSdkVersion 22
-                targetSdkVersion 33
+                targetSdkVersion 34
             }
             
             compileOptions {
-                sourceCompatibility JavaVersion.VERSION_11
-                targetCompatibility JavaVersion.VERSION_11
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
             }
             
             packagingOptions {
@@ -172,13 +172,13 @@ jobs:
         
         # 配置Gradle Wrapper版本
         if [ -f platforms/android/gradle/wrapper/gradle-wrapper.properties ]; then
-          sed -i 's/gradle-.*-all.zip/gradle-7.6-all.zip/g' platforms/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/gradle-.*-all.zip/gradle-8.4-all.zip/g' platforms/android/gradle/wrapper/gradle-wrapper.properties
         else
           # 如果文件不存在，创建一个
           cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
         distributionBase=GRADLE_USER_HOME
         distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-7.6-all.zip
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip
         zipStoreBase=GRADLE_USER_HOME
         zipStorePath=wrapper/dists
         EOF
