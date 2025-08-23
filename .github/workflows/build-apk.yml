@@ -41,11 +41,32 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
         
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        api-level: 33
-        build-tools: 33.0.0
+    - name: Setup Android SDK Environment
+      run: |
+        # 设置Android SDK环境变量
+        export ANDROID_HOME=$ANDROID_SDK_ROOT
+        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+        echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "$ANDROID_SDK_ROOT/build-tools/33.0.0" >> $GITHUB_PATH
+        
+        # 检查SDK环境
+        echo "Android SDK Root: $ANDROID_SDK_ROOT"
+        ls -la $ANDROID_SDK_ROOT/ || echo "SDK directory listing failed"
+        
+        # 检查并安装必要的SDK组件
+        echo "Checking SDK components..."
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --list_installed || echo "Failed to list installed components"
+        
+        # 安装必要的组件（如果不存在）
+        echo "Installing required SDK components..."
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || echo "License acceptance failed"
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platform-tools" "build-tools;33.0.0" "platforms;android-33" || echo "Component installation failed"
+        
+        # 验证安装
+        echo "Verifying installation..."
+        ls -la $ANDROID_SDK_ROOT/build-tools/ || echo "Build tools not found"
+        ls -la $ANDROID_SDK_ROOT/platforms/ || echo "Platforms not found"
         
     - name: Install Cordova CLI
       run: |
