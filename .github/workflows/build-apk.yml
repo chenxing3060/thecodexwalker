@@ -45,7 +45,7 @@ jobs:
       uses: android-actions/setup-android@v3
       with:
         api-level: 34
-        build-tools: 35.0.0
+        build-tools: 33.0.2
         
     - name: Install Cordova CLI
       run: |
