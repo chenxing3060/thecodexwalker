@@ -23,9 +23,6 @@ jobs:
         - name: Install Cordova CLI
           run: npm install -g cordova
           
-        - name: Install dependencies
-          run: npm install
-          
         - name: Setup Java
           uses: actions/setup-java@v4
           with:
@@ -40,6 +37,9 @@ jobs:
               
         - name: Add Android platform
           run: cordova platform add android@12.0.0
+          
+        - name: Install dependencies
+          run: npm install
           
         - name: Add Cordova plugins
           run: |
