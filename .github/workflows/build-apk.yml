@@ -1,275 +1,71 @@
-name: Build Android APK with Docker
+name: Build Android APK
 
 on:
-  push:
-    branches: [ main, master ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version number (e.g., 1.4.0)'
-        required: false
-        default: '1.4.0'
-      build_type:
-        description: 'Build type'
-        required: true
-        default: 'release'
-        type: choice
-        options:
-        - release
-        - debug
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+    workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build Cordova Docker image
-      run: |
-        docker build -f Dockerfile.cordova -t cordova-build:latest .
+    build:
+        runs-on: ubuntu-latest
         
-    - name: Verify Docker environment
-      run: |
-        docker run --rm cordova-build:latest bash -c "
-          echo '=== Docker环境验证 ==='
-          java -version
-          node --version
-          gradle --version
-          cordova --version
-          echo 'Android SDK: '$ANDROID_HOME
-          ls -la \$ANDROID_HOME/
-        "
-        
-    - name: Create Cordova project in Docker
-      run: |
-        docker run --rm -v "$PWD:/workspace" cordova-build:latest bash -c "
-          cd /workspace
-          cordova create thecodexwalker com.thecodexwalker.app 'The Codex Walker'
-          echo 'Cordova项目创建完成'
-        "
-        
-    - name: Copy web assets to Cordova www
-      run: |
-        # 清空www目录
-        rm -rf thecodexwalker/www/*
-        
-        # 复制主项目文件到www目录
-        cp index.html thecodexwalker/www/
-        cp game.html thecodexwalker/www/
-        cp about.html thecodexwalker/www/
-        cp ending_credits.html thecodexwalker/www/
-        cp style.css thecodexwalker/www/
-        cp -r css thecodexwalker/www/
-        cp -r js thecodexwalker/www/
-        cp -r data thecodexwalker/www/
-        cp -r game thecodexwalker/www/
-        
-    - name: Configure Cordova project in Docker
-      run: |
-        docker run --rm -v "$PWD:/workspace" cordova-build:latest bash -c "
-          cd /workspace/thecodexwalker
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
           
-          # 添加Android平台（使用兼容版本）
-          cordova platform add android@12.0.1
+        - name: Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+              node-version: '18'
+              cache: 'npm'
+              
+        - name: Install Cordova CLI
+          run: npm install -g cordova
           
-          # 配置config.xml
-          cat > config.xml << 'EOF'
-        <?xml version='1.0' encoding='utf-8'?>
-        <widget id=\"com.thecodexwalker.app\" version=\"1.4.0\" xmlns=\"http://www.w3.org/ns/widgets\" xmlns:cdv=\"http://cordova.apache.org/ns/1.0\">
-            <name>The Codex Walker</name>
-            <description>万象行者 - 一个互动式视觉小说游戏</description>
-            <author email=\"dev@thecodexwalker.com\" href=\"https://github.com/chenxing3060/thecodexwalker\">
-                The Codex Walker Team
-            </author>
-            <content src=\"index.html\" />
-            <access origin=\"*\" />
-            <allow-intent href=\"http://*/*\" />
-            <allow-intent href=\"https://*/*\" />
-            <allow-intent href=\"tel:*\" />
-            <allow-intent href=\"sms:*\" />
-            <allow-intent href=\"mailto:*\" />
-            <allow-intent href=\"geo:*\" />
-            <platform name=\"android\">
-                <allow-intent href=\"market:*\" />
-                <preference name=\"android-minSdkVersion\" value=\"22\" />
-                <preference name=\"android-targetSdkVersion\" value=\"34\" />
-            </platform>
-            <preference name=\"DisallowOverscroll\" value=\"true\" />
-            <preference name=\"android-minSdkVersion\" value=\"22\" />
-            <preference name=\"android-targetSdkVersion\" value=\"34\" />
-            <preference name=\"SplashMaintainAspectRatio\" value=\"true\" />
-            <preference name=\"FadeSplashScreenDuration\" value=\"300\" />
-            <preference name=\"SplashShowOnlyFirstTime\" value=\"false\" />
-            <preference name=\"SplashScreen\" value=\"screen\" />
-            <preference name=\"SplashScreenDelay\" value=\"3000\" />
-        </widget>
-        EOF
+        - name: Install dependencies
+          run: npm install
           
-          # 安装Cordova插件
-          cordova plugin add cordova-plugin-whitelist@1.3.5
-          cordova plugin add cordova-plugin-splashscreen@6.0.2
-          cordova plugin add cordova-plugin-statusbar@4.0.0
-          cordova plugin add cordova-plugin-device@2.1.0
+        - name: Setup Java
+          uses: actions/setup-java@v4
+          with:
+              distribution: 'temurin'
+              java-version: '17'
+              
+        - name: Setup Android SDK
+          uses: android-actions/setup-android@v0
           
-          echo 'Cordova配置完成'
-        "
-        
-    - name: Configure Android build settings in Docker
-      run: |
-        docker run --rm -v "$PWD:/workspace" cordova-build:latest bash -c "
-          cd /workspace/thecodexwalker
+        - name: Add Android platform
+          run: cordova platform add android@12.0.0
           
-          # 等待平台添加完成
-          sleep 5
+        - name: Add Cordova plugins
+          run: |
+              cordova plugin add cordova-plugin-whitelist
+              cordova plugin add cordova-plugin-file
+              cordova plugin add cordova-plugin-media
+              cordova plugin add cordova-plugin-splashscreen
+              cordova plugin add cordova-plugin-statusbar
+              cordova plugin add cordova-plugin-inappbrowser
+              
+        - name: Build Android APK
+          run: cordova build android --verbose
           
-          # 确保目录存在
-          mkdir -p platforms/android/app
-          
-          # 创建优化的build-extras.gradle
-          cat > platforms/android/app/build-extras.gradle << 'EOF'
-        android {
-            compileSdkVersion 34
-            buildToolsVersion \"34.0.0\"
-            
-            defaultConfig {
-                minSdkVersion 22
-                targetSdkVersion 34
-                versionCode 140
-                versionName \"1.4.0\"
-            }
-            
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_11
-                targetCompatibility JavaVersion.VERSION_11
-            }
-            
-            packagingOptions {
-                pickFirst '**/libc++_shared.so'
-                pickFirst '**/libjsc.so'
-                exclude 'META-INF/DEPENDENCIES'
-                exclude 'META-INF/LICENSE'
-                exclude 'META-INF/LICENSE.txt'
-                exclude 'META-INF/NOTICE'
-                exclude 'META-INF/NOTICE.txt'
-            }
-            
-            lintOptions {
-                abortOnError false
-                checkReleaseBuilds false
-            }
-        }
-        EOF
-          
-          # 创建gradle.properties文件
-          cat > platforms/android/gradle.properties << 'EOF'
-        org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8 -XX:+UseG1GC
-        android.useAndroidX=true
-        android.enableJetifier=true
-        org.gradle.daemon=false
-        org.gradle.configureondemand=false
-        org.gradle.parallel=false
-        org.gradle.caching=false
-        android.builder.sdkDownload=true
-        EOF
-          
-          echo 'Android构建配置完成'
-        "
-        
-    - name: Update version in config.xml
-      run: |
-        VERSION="${{ github.event.inputs.version || '1.4.0' }}"
-        VERSION_CODE=$(echo $VERSION | sed 's/\.//g')
-        cd thecodexwalker
-        sed -i "s/version=\"[^\"]*\"/version=\"$VERSION\"/g" config.xml
-        
-    - name: Build APK in Docker
-      run: |
-        BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
-        docker run --rm -v "$PWD:/workspace" cordova-build:latest bash -c "
-          cd /workspace/thecodexwalker
-          
-          echo '=== 开始构建APK ==='
-          echo '构建类型: $BUILD_TYPE'
-          echo 'Java版本: '\$(java -version 2>&1 | head -1)
-          echo 'Gradle版本: '\$(gradle --version | grep Gradle)
-          echo 'Cordova版本: '\$(cordova --version)
-          
-          # 验证平台
-          cordova platform ls
-          
-          # 构建APK
-          if [ '$BUILD_TYPE' = 'release' ]; then
-            cordova build android --release
-          else
-            cordova build android --debug
-          fi
-          
-          echo '=== 构建完成 ==='
-        "
-        
-    - name: Find APK files
-      id: find_apk
-      working-directory: thecodexwalker
-      run: |
-        BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
-        if [ "$BUILD_TYPE" = "release" ]; then
-          APK_PATH=$(find platforms/android/app/build/outputs/apk/release -name "*.apk" | head -1)
-          APK_NAME="thecodexwalker-release.apk"
-        else
-          APK_PATH=$(find platforms/android/app/build/outputs/apk/debug -name "*.apk" | head -1)
-          APK_NAME="thecodexwalker-debug.apk"
-        fi
-        echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-        echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-        echo "找到APK文件: $APK_PATH"
-        
-    - name: Upload APK as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.find_apk.outputs.apk_name }}
-        path: thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
-        
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
-        name: Release ${{ github.event.inputs.version || github.ref_name }}
-        body: |
-          ## 万象行者 - The Codex Walker
-          
-          ### 更新内容
-          - 使用Docker容器化构建环境
-          - 确保版本兼容性：JDK 11 + Gradle 7.6 + Cordova Android 12.0.1
-          - 版本: ${{ github.event.inputs.version || github.ref_name }}
-          - 构建类型: ${{ github.event.inputs.build_type || 'release' }}
-          
-          ### 技术栈
-          - Java 11 (OpenJDK)
-          - Node.js 18.19.0
-          - Gradle 7.6
-          - Cordova 12.0.0
-          - Cordova Android 12.0.1
-          
-          ### 安装说明
-          1. 下载对应的APK文件
-          2. 在Android设备上启用"未知来源"安装
-          3. 安装APK文件
-          
-          ### 在线体验
-          [GitHub Pages版本](https://chenxing3060.github.io/thecodexwalker/game.html)
-        files: |
-          thecodexwalker/${{ steps.find_apk.outputs.apk_path }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Upload APK artifact
+          uses: actions/upload-artifact@v4
+          with:
+              name: thecodexwalker-apk
+              path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+              
+        - name: Build Release APK
+          run: |
+              cordova build android --release --verbose
+              keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+              jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass android -keypass android app-release-unsigned.apk alias_name
+              zipalign -v 4 app-release-unsigned.apk thecodexwalker-release.apk
+              
+        - name: Upload Release APK
+          uses: actions/upload-artifact@v4
+          with:
+              name: thecodexwalker-release-apk
+              path: thecodexwalker-release.apk
