@@ -177,10 +177,38 @@ jobs:
           run: |
               export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"
               export PATH="$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
+              
+              # 构建发布版本
               cordova build android --release --verbose
-              keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-              jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass android -keypass android app-release-unsigned.apk alias_name
-              zipalign -v 4 app-release-unsigned.apk thecodexwalker-release.apk
+              
+              # 检查生成的文件
+              echo "Checking generated files:"
+              ls -la platforms/android/app/build/outputs/
+              ls -la platforms/android/app/build/outputs/apk/release/ || echo "No APK release directory"
+              ls -la platforms/android/app/build/outputs/bundle/release/ || echo "No bundle release directory"
+              
+              # 如果生成了AAB文件，转换为APK
+              if [ -f "platforms/android/app/build/outputs/bundle/release/app-release.aab" ]; then
+                  echo "AAB file found, converting to APK..."
+                  # 使用bundletool将AAB转换为APK
+                  wget https://github.com/google/bundletool/releases/download/1.17.2/bundletool-all-1.17.2.jar
+                  java -jar bundletool-all-1.17.2.jar build-apks --bundle=platforms/android/app/build/outputs/bundle/release/app-release.aab --output=app-release.apks
+                  # 提取APK文件
+                  unzip -p app-release.apks base.apk > app-release.apk
+                  echo "APK file created: app-release.apk"
+              fi
+              
+              # 签名APK文件
+              if [ -f "app-release.apk" ]; then
+                  echo "Signing APK file..."
+                  keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+                  jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass android -keypass android app-release.apk alias_name
+                  zipalign -v 4 app-release.apk thecodexwalker-release.apk
+                  echo "Signed APK created: thecodexwalker-release.apk"
+              else
+                  echo "No APK file found for signing"
+                  exit 1
+              fi
               
         - name: Upload Release APK
           uses: actions/upload-artifact@v4
