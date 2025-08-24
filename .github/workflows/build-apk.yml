@@ -192,10 +192,30 @@ jobs:
                   echo "AAB file found, converting to APK..."
                   # 使用bundletool将AAB转换为APK
                   wget https://github.com/google/bundletool/releases/download/1.17.2/bundletool-all-1.17.2.jar
+                  
+                  # 生成APKS文件
                   java -jar bundletool-all-1.17.2.jar build-apks --bundle=platforms/android/app/build/outputs/bundle/release/app-release.aab --output=app-release.apks
-                  # 提取APK文件
-                  unzip -p app-release.apks base.apk > app-release.apk
+                  
+                  # 检查APKS文件内容
+                  echo "APKS file contents:"
+                  unzip -l app-release.apks
+                  
+                  # 提取APK文件（尝试多种可能的文件名）
+                  if unzip -l app-release.apks | grep -q "base.apk"; then
+                      echo "Found base.apk, extracting..."
+                      unzip -p app-release.apks base.apk > app-release.apk
+                  elif unzip -l app-release.apks | grep -q "\.apk"; then
+                      echo "Found APK file, extracting first one..."
+                      APK_FILE=$(unzip -l app-release.apks | grep "\.apk" | head -1 | awk '{print $4}')
+                      echo "Extracting APK file: $APK_FILE"
+                      unzip -p app-release.apks "$APK_FILE" > app-release.apk
+                  else
+                      echo "No APK files found in APKS"
+                      exit 1
+                  fi
+                  
                   echo "APK file created: app-release.apk"
+                  ls -la app-release.apk
               fi
               
               # 签名APK文件
