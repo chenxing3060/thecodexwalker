@@ -90,6 +90,30 @@ jobs:
               cp -r temp-project/.* . 2>/dev/null || true
               rm -rf temp-project
               
+              # 创建www目录结构
+              mkdir -p www
+              
+              # 复制游戏文件到www目录
+              echo "Copying game files to www directory..."
+              cp -r *.html www/ 2>/dev/null || true
+              cp -r css/ www/ 2>/dev/null || true
+              cp -r js/ www/ 2>/dev/null || true
+              cp -r data/ www/ 2>/dev/null || true
+              cp -r game/ www/ 2>/dev/null || true
+              cp -r style.css www/ 2>/dev/null || true
+              
+              # 显示www目录内容
+              echo "www directory contents:"
+              ls -la www/
+              echo "www/css contents:"
+              ls -la www/css/ 2>/dev/null || echo "No css directory"
+              echo "www/js contents:"
+              ls -la www/js/ 2>/dev/null || echo "No js directory"
+              echo "www/data contents:"
+              ls -la www/data/ 2>/dev/null || echo "No data directory"
+              echo "www/game contents:"
+              ls -la www/game/ 2>/dev/null || echo "No game directory"
+              
         - name: Add Android platform
           run: |
               # 检查并清理现有平台
