@@ -97,9 +97,9 @@ echo "Node.js: $(node --version)\"\n\
 echo "Gradle: $(gradle --version | grep Gradle)\"\n\
 echo "Cordova: $(cordova --version)\"\n\
 echo "Android SDK: $ANDROID_HOME\"\n\
-echo "\"\n\
+echo \"\"\n\
 echo "开始构建...\"\n\
-exec "$@\"' > /usr/local/bin/cordova-build.sh \
+exec "$@"' > /usr/local/bin/cordova-build.sh \
     && chmod +x /usr/local/bin/cordova-build.sh
 
 # 设置入口点
