@@ -43,8 +43,15 @@ jobs:
               rm -rf temp-project
               
         - name: Add Android platform
-          run: cordova platform add android@12.0.0
-          
+          run: |
+              # 检查并清理现有平台
+              if [ -d "platforms/android" ]; then
+                  echo "Removing existing Android platform..."
+                  cordova platform remove android
+              fi
+              # 添加Android平台
+              cordova platform add android@12.0.0
+              
         - name: Install dependencies
           run: npm install
           
