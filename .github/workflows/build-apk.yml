@@ -29,6 +29,13 @@ jobs:
               distribution: 'temurin'
               java-version: '17'
               
+        - name: Setup Android SDK
+          uses: android-actions/setup-android@v0.2.0
+          with:
+              api-level: '32'
+              build-tools: '32.0.0'
+              platform: '32'
+              
         - name: Setup Android environment
           run: |
               echo "ANDROID_HOME=$ANDROID_HOME"
