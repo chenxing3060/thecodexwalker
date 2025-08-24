@@ -1,0 +1,107 @@
+# Cordova Android Build Environment
+# 基于Ubuntu 22.04，预配置所有必需的工具和版本
+FROM ubuntu:22.04
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV GRADLE_HOME=/opt/gradle
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV NODE_VERSION=18.19.0
+ENV CORDOVA_VERSION=12.0.0
+ENV PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/34.0.0:$GRADLE_HOME/bin:$JAVA_HOME/bin
+
+# 安装基础依赖
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    unzip \
+    git \
+    build-essential \
+    python3 \
+    python3-pip \
+    openjdk-11-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装Node.js 18.19.0
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# 验证Node.js版本
+RUN node --version && npm --version
+
+# 安装Gradle 7.6（与Cordova Android 12.0.1兼容）
+RUN wget https://services.gradle.org/distributions/gradle-7.6-bin.zip -P /tmp \
+    && unzip -d /opt /tmp/gradle-7.6-bin.zip \
+    && ln -s /opt/gradle-7.6 /opt/gradle \
+    && rm /tmp/gradle-7.6-bin.zip
+
+# 验证Gradle版本
+RUN gradle --version
+
+# 创建Android SDK目录
+RUN mkdir -p $ANDROID_HOME
+
+# 下载并安装Android Command Line Tools
+RUN wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -P /tmp \
+    && unzip /tmp/commandlinetools-linux-9477386_latest.zip -d $ANDROID_HOME \
+    && mkdir -p $ANDROID_HOME/cmdline-tools/latest \
+    && mv $ANDROID_HOME/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/ 2>/dev/null || true \
+    && rm /tmp/commandlinetools-linux-9477386_latest.zip
+
+# 修复cmdline-tools目录结构
+RUN cd $ANDROID_HOME/cmdline-tools && \
+    if [ -d "bin" ]; then \
+        mkdir -p latest && \
+        mv bin latest/ && \
+        mv lib latest/ && \
+        mv NOTICE.txt latest/ && \
+        mv source.properties latest/; \
+    fi
+
+# 接受Android SDK许可证并安装必要组件
+RUN yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses \
+    && $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+        "platform-tools" \
+        "build-tools;34.0.0" \
+        "platforms;android-34" \
+        "platforms;android-33" \
+        "platforms;android-32"
+
+# 安装Cordova CLI
+RUN npm install -g cordova@$CORDOVA_VERSION
+
+# 关闭Cordova遥测
+RUN cordova telemetry off
+
+# 验证所有工具版本
+RUN echo "=== 环境验证 ===" \
+    && echo "Java版本:" && java -version \
+    && echo "Node.js版本:" && node --version \
+    && echo "NPM版本:" && npm --version \
+    && echo "Gradle版本:" && gradle --version \
+    && echo "Cordova版本:" && cordova --version \
+    && echo "Android SDK路径:" && echo $ANDROID_HOME \
+    && echo "已安装的Android组件:" && $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed
+
+# 创建工作目录
+WORKDIR /workspace
+
+# 创建构建脚本
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "=== Cordova Android构建环境 ===\"\n\
+echo "Java: $(java -version 2>&1 | head -1)\"\n\
+echo "Node.js: $(node --version)\"\n\
+echo "Gradle: $(gradle --version | grep Gradle)\"\n\
+echo "Cordova: $(cordova --version)\"\n\
+echo "Android SDK: $ANDROID_HOME\"\n\
+echo "\"\n\
+echo "开始构建...\"\n\
+exec "$@\"' > /usr/local/bin/cordova-build.sh \
+    && chmod +x /usr/local/bin/cordova-build.sh
+
+# 设置入口点
+ENTRYPOINT ["/usr/local/bin/cordova-build.sh"]
+CMD ["bash"]
