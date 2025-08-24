@@ -200,6 +200,10 @@ jobs:
               # 等待Android平台完全初始化
               sleep 5
               
+              # 检查目录结构
+              echo "检查目录结构..."
+              ls -la platforms/android/app/src/main/res/ 2>/dev/null || echo "Android res目录不存在"
+              
               # 复制图标到Cordova项目
               if [ -d "res/icon/android" ] && [ -d "platforms/android/app/src/main/res" ]; then
                   echo "复制图标文件..."
@@ -226,6 +230,24 @@ jobs:
                   # 验证图标文件
                   echo "验证图标文件..."
                   find platforms/android/app/src/main/res/drawable-* -name "icon.png" -exec ls -la {} \;
+                  
+                  # 检查config.xml中的图标配置
+                  echo "检查config.xml图标配置..."
+                  if [ -f "config.xml" ]; then
+                      echo "config.xml内容:"
+                      cat config.xml
+                  fi
+                  
+                  # 强制更新图标配置
+                  echo "强制更新图标配置..."
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-ldpi-icon.png" density="ldpi" \/>/<icon src="res\/icon\/android\/drawable-ldpi-icon.png" density="ldpi" \/>/g' config.xml
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-mdpi-icon.png" density="mdpi" \/>/<icon src="res\/icon\/android\/drawable-mdpi-icon.png" density="mdpi" \/>/g' config.xml
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-hdpi-icon.png" density="hdpi" \/>/<icon src="res\/icon\/android\/drawable-hdpi-icon.png" density="hdpi" \/>/g' config.xml
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-xhdpi-icon.png" density="xhdpi" \/>/<icon src="res\/icon\/android\/drawable-xhdpi-icon.png" density="xhdpi" \/>/g' config.xml
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-xxhdpi-icon.png" density="xxhdpi" \/>/<icon src="res\/icon\/android\/drawable-xxhdpi-icon.png" density="xxhdpi" \/>/g' config.xml
+                  sed -i 's/<icon src="res\/icon\/android\/drawable-xxxhdpi-icon.png" density="xxxhdpi" \/>/<icon src="res\/icon\/android\/drawable-xxxhdpi-icon.png" density="xxxhdpi" \/>/g' config.xml
+                  
+                  echo "图标配置更新完成！"
               else
                   echo "❌ 图标目录或Android平台目录不存在！"
                   echo "res/icon/android 存在: $([ -d "res/icon/android" ] && echo "是" || echo "否")"
