@@ -35,6 +35,16 @@ jobs:
               echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
               echo "JAVA_HOME=$JAVA_HOME"
               
+        - name: Force Gradle version
+          run: |
+              # 强制下载并使用Gradle 7.6.1
+              wget https://services.gradle.org/distributions/gradle-7.6.1-bin.zip
+              unzip -q gradle-7.6.1-bin.zip
+              export PATH="$PWD/gradle-7.6.1/bin:$PATH"
+              echo "GRADLE_HOME=$PWD/gradle-7.6.1" >> $GITHUB_ENV
+              echo "$PWD/gradle-7.6.1/bin" >> $GITHUB_PATH
+              gradle --version
+              
         - name: Initialize Cordova project
           run: |
               cordova create temp-project com.thecodexwalker.game "The Codex Walker"
@@ -99,6 +109,13 @@ jobs:
               }
               EOF
               
+              # 强制使用我们的Gradle版本
+              echo '#!/bin/bash' > platforms/android/gradlew
+              echo 'export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"' >> platforms/android/gradlew
+              echo 'export PATH="$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"' >> platforms/android/gradlew
+              echo 'exec "$GITHUB_WORKSPACE/gradle-7.6.1/bin/gradle" "$@"' >> platforms/android/gradlew
+              chmod +x platforms/android/gradlew
+              
         - name: Install dependencies
           run: npm install
           
@@ -112,8 +129,11 @@ jobs:
               cordova plugin add cordova-plugin-inappbrowser@5.0.0
               
         - name: Build Android APK
-          run: cordova build android --verbose
-          
+          run: |
+              export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"
+              export PATH="$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
+              cordova build android --verbose
+              
         - name: Upload APK artifact
           uses: actions/upload-artifact@v4
           with:
@@ -122,6 +142,8 @@ jobs:
               
         - name: Build Release APK
           run: |
+              export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"
+              export PATH="$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
               cordova build android --release --verbose
               keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
               jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass android -keypass android app-release-unsigned.apk alias_name
