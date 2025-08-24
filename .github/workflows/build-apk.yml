@@ -180,6 +180,37 @@ jobs:
               ls -la res/icon/android/
               ls -la res/screen/android/
               
+        - name: Configure Cordova Icons
+          run: |
+              echo "🔧 配置Cordova图标..."
+              
+              # 复制图标到Cordova项目
+              if [ -d "res/icon/android" ]; then
+                  echo "复制图标文件..."
+                  cp -r res/icon/android/* platforms/android/app/src/main/res/ 2>/dev/null || true
+                  
+                  # 创建正确的目录结构
+                  mkdir -p platforms/android/app/src/main/res/drawable-ldpi
+                  mkdir -p platforms/android/app/src/main/res/drawable-mdpi
+                  mkdir -p platforms/android/app/src/main/res/drawable-hdpi
+                  mkdir -p platforms/android/app/src/main/res/drawable-xhdpi
+                  mkdir -p platforms/android/app/src/main/res/drawable-xxhdpi
+                  mkdir -p platforms/android/app/src/main/res/drawable-xxxhdpi
+                  
+                  # 复制图标到对应目录
+                  cp res/icon/android/drawable-ldpi-icon.png platforms/android/app/src/main/res/drawable-ldpi/icon.png
+                  cp res/icon/android/drawable-mdpi-icon.png platforms/android/app/src/main/res/drawable-mdpi/icon.png
+                  cp res/icon/android/drawable-hdpi-icon.png platforms/android/app/src/main/res/drawable-hdpi/icon.png
+                  cp res/icon/android/drawable-xhdpi-icon.png platforms/android/app/src/main/res/drawable-xhdpi/icon.png
+                  cp res/icon/android/drawable-xxhdpi-icon.png platforms/android/app/src/main/res/drawable-xxhdpi/icon.png
+                  cp res/icon/android/drawable-xxxhdpi-icon.png platforms/android/app/src/main/res/drawable-xxxhdpi/icon.png
+                  
+                  echo "图标复制完成！"
+                  ls -la platforms/android/app/src/main/res/drawable-*/
+              else
+                  echo "❌ 图标目录不存在！"
+              fi
+              
         - name: Add Android platform
           run: |
               # 检查并清理现有平台

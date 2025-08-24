@@ -65,7 +65,8 @@ class GameController {
     // Placeholder for the "About" page
     showAbout() {
         console.log('显示关于页面');
-        alert('关于页面正在施工中...');
+        // 跳转到关于页面
+        window.location.href = 'about.html';
     }
 
     // Logic for the initial loading animation
