@@ -89,18 +89,21 @@ RUN echo "=== 环境验证 ===" \
 WORKDIR /workspace
 
 # 创建构建脚本
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "=== Cordova Android构建环境 ===\"\n\
-echo "Java: $(java -version 2>&1 | head -1)\"\n\
-echo "Node.js: $(node --version)\"\n\
-echo "Gradle: $(gradle --version | grep Gradle)\"\n\
-echo "Cordova: $(cordova --version)\"\n\
-echo "Android SDK: $ANDROID_HOME\"\n\
-echo \"\"\n\
-echo "开始构建...\"\n\
-exec "$@"' > /usr/local/bin/cordova-build.sh \
-    && chmod +x /usr/local/bin/cordova-build.sh
+RUN cat > /usr/local/bin/cordova-build.sh << 'EOF'
+#!/bin/bash
+set -e
+echo "=== Cordova Android构建环境 ==="
+echo "Java: $(java -version 2>&1 | head -1)"
+echo "Node.js: $(node --version)"
+echo "Gradle: $(gradle --version | grep Gradle)"
+echo "Cordova: $(cordova --version)"
+echo "Android SDK: $ANDROID_HOME"
+echo ""
+echo "开始构建..."
+exec "$@"
+EOF
+
+RUN chmod +x /usr/local/bin/cordova-build.sh
 
 # 设置入口点
 ENTRYPOINT ["/usr/local/bin/cordova-build.sh"]
