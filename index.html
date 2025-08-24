@@ -22,6 +22,7 @@
             background-image: linear-gradient(to bottom, #0a0a14, #1a1a2e);
             overflow-x: hidden;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .container {
@@ -33,35 +34,40 @@
         }
         
         h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
             margin-bottom: 10px;
             color: #7e57c2;
             text-shadow: 0 0 10px rgba(126, 87, 194, 0.5);
+            word-wrap: break-word;
         }
         
         .subtitle {
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 3vw, 1.2rem);
             margin-bottom: 30px;
             color: #b39ddb;
+            word-wrap: break-word;
         }
         
         .btn {
             display: inline-block;
-            padding: 12px 30px;
-            margin: 10px;
+            padding: clamp(10px, 3vw, 12px) clamp(20px, 6vw, 30px);
+            margin: 8px;
             background: linear-gradient(135deg, #7e57c2, #5e35b1);
             color: white;
             text-decoration: none;
             border-radius: 25px;
             font-weight: bold;
+            font-size: clamp(0.9rem, 3vw, 1rem);
             transition: all 0.3s ease;
             border: none;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(94, 53, 177, 0.4);
+            min-width: 120px;
+            touch-action: manipulation;
         }
         
-        .btn:hover {
-            transform: translateY(-3px);
+        .btn:hover, .btn:active {
+            transform: translateY(-2px);
             box-shadow: 0 7px 20px rgba(94, 53, 177, 0.6);
         }
         
@@ -70,7 +76,7 @@
             box-shadow: 0 4px 15px rgba(57, 73, 171, 0.4);
         }
         
-        .btn-secondary:hover {
+        .btn-secondary:hover, .btn-secondary:active {
             box-shadow: 0 7px 20px rgba(57, 73, 171, 0.6);
         }
         
@@ -78,12 +84,24 @@
             margin: 30px 0;
             line-height: 1.6;
             color: #b0bec5;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            padding: 0 10px;
+            word-wrap: break-word;
         }
         
         .footer {
             margin-top: 40px;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             color: #78909c;
+            padding: 0 10px;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
         }
         
         /* 动画效果 */
@@ -125,6 +143,52 @@
             0% { opacity: 0; }
             50% { opacity: 0.3; }
             100% { opacity: 0; }
+        }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 280px;
+                margin: 5px 0;
+            }
+            
+            .description {
+                margin: 20px 0;
+                padding: 0 5px;
+            }
+            
+            .footer {
+                margin-top: 30px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                margin-bottom: 8px;
+            }
+            
+            .subtitle {
+                margin-bottom: 20px;
+            }
+            
+            .description {
+                margin: 15px 0;
+            }
         }
     </style>
 </head>

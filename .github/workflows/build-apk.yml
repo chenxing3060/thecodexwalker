@@ -180,14 +180,29 @@ jobs:
               ls -la res/icon/android/
               ls -la res/screen/android/
               
+        - name: Add Android platform
+          run: |
+              if [ -d "platforms/android" ]; then
+                  echo "移除现有的Android平台..."
+                  cordova platform remove android
+              fi
+              
+              echo "添加Android平台..."
+              cordova platform add android@11.0.0
+              
+              echo "Android平台添加完成！"
+              ls -la platforms/
+              
         - name: Configure Cordova Icons
           run: |
               echo "🔧 配置Cordova图标..."
               
+              # 等待Android平台完全初始化
+              sleep 5
+              
               # 复制图标到Cordova项目
-              if [ -d "res/icon/android" ]; then
+              if [ -d "res/icon/android" ] && [ -d "platforms/android/app/src/main/res" ]; then
                   echo "复制图标文件..."
-                  cp -r res/icon/android/* platforms/android/app/src/main/res/ 2>/dev/null || true
                   
                   # 创建正确的目录结构
                   mkdir -p platforms/android/app/src/main/res/drawable-ldpi
@@ -207,19 +222,15 @@ jobs:
                   
                   echo "图标复制完成！"
                   ls -la platforms/android/app/src/main/res/drawable-*/
+                  
+                  # 验证图标文件
+                  echo "验证图标文件..."
+                  find platforms/android/app/src/main/res/drawable-* -name "icon.png" -exec ls -la {} \;
               else
-                  echo "❌ 图标目录不存在！"
+                  echo "❌ 图标目录或Android平台目录不存在！"
+                  echo "res/icon/android 存在: $([ -d "res/icon/android" ] && echo "是" || echo "否")"
+                  echo "platforms/android/app/src/main/res 存在: $([ -d "platforms/android/app/src/main/res" ] && echo "是" || echo "否")"
               fi
-              
-        - name: Add Android platform
-          run: |
-              # 检查并清理现有平台
-              if [ -d "platforms/android" ]; then
-                  echo "Removing existing Android platform..."
-                  cordova platform remove android
-              fi
-              # 添加Android平台（降级到11.0.0）
-              cordova platform add android@11.0.0
               
         - name: Configure Gradle compatibility
           run: |
