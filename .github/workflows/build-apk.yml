@@ -178,7 +178,7 @@ jobs:
         - name: Build Release APK
           run: |
               export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"
-              export PATH="$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
+              export PATH="$PATH:$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
               
               # 确保Android SDK工具在PATH中
               export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/32.0.0"
@@ -252,6 +252,21 @@ jobs:
                   echo "Running zipalign with full path..."
                   $ANDROID_HOME/build-tools/32.0.0/zipalign -v 4 app-release.apk thecodexwalker-release.apk
                   echo "Signed APK created: thecodexwalker-release.apk"
+                  
+                  # 检查最终文件大小和内容
+                  echo "Final APK file details:"
+                  ls -la thecodexwalker-release.apk
+                  echo "APK file size: $(du -h thecodexwalker-release.apk | cut -f1)"
+                  
+                  # 检查APK内容
+                  echo "APK contents:"
+                  unzip -l thecodexwalker-release.apk | head -20
+                  echo "... (showing first 20 entries)"
+                  
+                  # 检查是否包含视频资源
+                  echo "Checking for video resources in APK:"
+                  unzip -l thecodexwalker-release.apk | grep -i "\.mp4\|\.webm\|\.ogg" || echo "No video files found"
+                  
               else
                   echo "No APK file found for signing"
                   exit 1
