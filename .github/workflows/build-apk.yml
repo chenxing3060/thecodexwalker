@@ -100,16 +100,13 @@ jobs:
               
         - name: Configure Gradle compatibility
           run: |
-              # 创建gradle.properties文件
+              # 创建gradle.properties文件（移除已弃用的选项）
               cat > platforms/android/gradle.properties << EOF
               org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
               android.useAndroidX=true
               android.enableJetifier=true
               android.enableR8.fullMode=false
               android.enableR8=true
-              android.enableD8=true
-              android.enableD8.desugaring=true
-              android.enableBuildCache=true
               org.gradle.parallel=true
               org.gradle.caching=true
               org.gradle.configureondemand=true
