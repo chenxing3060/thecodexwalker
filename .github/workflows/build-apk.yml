@@ -200,19 +200,33 @@ jobs:
                   echo "APKS file contents:"
                   unzip -l app-release.apks
                   
-                  # 提取APK文件（尝试多种可能的文件名）
-                  if unzip -l app-release.apks | grep -q "base.apk"; then
-                      echo "Found base.apk, extracting..."
-                      unzip -p app-release.apks base.apk > app-release.apk
-                  elif unzip -l app-release.apks | grep -q "\.apk"; then
-                      echo "Found APK file, extracting first one..."
-                      APK_FILE=$(unzip -l app-release.apks | grep "\.apk" | head -1 | awk '{print $4}')
-                      echo "Extracting APK file: $APK_FILE"
-                      unzip -p app-release.apks "$APK_FILE" > app-release.apk
+                  # 创建临时目录并解压APKS文件
+                  mkdir -p temp_apks
+                  cd temp_apks
+                  unzip -q ../app-release.apks
+                  cd ..
+                  
+                  # 查找APK文件
+                  if [ -f "temp_apks/base.apk" ]; then
+                      echo "Found base.apk, copying..."
+                      cp temp_apks/base.apk app-release.apk
                   else
-                      echo "No APK files found in APKS"
-                      exit 1
+                      echo "Looking for APK files in temp_apks:"
+                      ls -la temp_apks/
+                      # 查找任何APK文件
+                      APK_FILES=$(find temp_apks -name "*.apk")
+                      if [ -n "$APK_FILES" ]; then
+                          FIRST_APK=$(echo "$APK_FILES" | head -1)
+                          echo "Found APK file: $FIRST_APK"
+                          cp "$FIRST_APK" app-release.apk
+                      else
+                          echo "No APK files found"
+                          exit 1
+                      fi
                   fi
+                  
+                  # 清理临时目录
+                  rm -rf temp_apks
                   
                   echo "APK file created: app-release.apk"
                   ls -la app-release.apk
