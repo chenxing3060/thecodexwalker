@@ -248,6 +248,21 @@ jobs:
                   sed -i 's/<icon src="res\/icon\/android\/drawable-xxxhdpi-icon.png" density="xxxhdpi" \/>/<icon src="res\/icon\/android\/drawable-xxxhdpi-icon.png" density="xxxhdpi" \/>/g' config.xml
                   
                   echo "图标配置更新完成！"
+                  
+                  # 确保图标在AndroidManifest.xml中被正确引用
+                  echo "检查AndroidManifest.xml..."
+                  if [ -f "platforms/android/app/src/main/AndroidManifest.xml" ]; then
+                      echo "AndroidManifest.xml内容:"
+                      cat platforms/android/app/src/main/AndroidManifest.xml
+                      
+                      # 确保图标引用正确
+                      echo "更新AndroidManifest.xml中的图标引用..."
+                      sed -i 's/android:icon="@drawable\/icon"/android:icon="@drawable\/icon"/g' platforms/android/app/src/main/AndroidManifest.xml
+                      sed -i 's/android:roundIcon="@drawable\/icon"/android:roundIcon="@drawable\/icon"/g' platforms/android/app/src/main/AndroidManifest.xml
+                      
+                      echo "AndroidManifest.xml更新完成！"
+                  fi
+                  
               else
                   echo "❌ 图标目录或Android平台目录不存在！"
                   echo "res/icon/android 存在: $([ -d "res/icon/android" ] && echo "是" || echo "否")"
@@ -413,9 +428,18 @@ jobs:
                       file platforms/android/app/build/outputs/apk/debug/app-debug.apk
                       unzip -t platforms/android/app/build/outputs/apk/debug/app-debug.apk
                       
+                      # 检查Debug APK是否包含自定义图标
+                      echo "检查Debug APK中的图标..."
+                      unzip -l platforms/android/app/build/outputs/apk/debug/app-debug.apk | grep -i "icon\|drawable" || echo "未找到图标相关文件"
+                      
                       # 复制Debug APK
                       cp platforms/android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
                       echo "Debug APK已复制到项目根目录"
+                      
+                      # 验证复制的Debug APK
+                      echo "验证复制的Debug APK..."
+                      file app-debug.apk
+                      unzip -t app-debug.apk
                   else
                       echo "❌ 所有构建都失败了！"
                       exit 1
