@@ -331,20 +331,41 @@ jobs:
               
         - name: Build Release APK
           run: |
-              export GRADLE_HOME="$GITHUB_WORKSPACE/gradle-7.6.1"
-              export PATH="$PATH:$GITHUB_WORKSPACE/gradle-7.6.1/bin:$PATH"
+              echo "🔨 构建Release APK..."
               
-              # 确保Android SDK工具在PATH中
-              export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/32.0.0"
+              # 确保游戏文件在www目录中
+              echo "检查www目录内容..."
+              ls -la www/
+              echo "www目录大小: $(du -sh www/)"
               
-              # 构建发布版本
-              cordova build android --release --verbose
+              # 确保在正确的目录中
+              cd platforms/android
               
-              # 检查生成的文件
-              echo "Checking generated files:"
-              ls -la platforms/android/app/build/outputs/
-              ls -la platforms/android/app/build/outputs/apk/release/ || echo "No APK release directory"
-              ls -la platforms/android/app/build/outputs/bundle/release/ || echo "No bundle release directory"
+              # 构建Release版本（不是Debug）
+              echo "构建Release版本..."
+              ./gradlew assembleRelease
+              
+              # 检查构建结果
+              if [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+                  echo "✅ Release APK构建成功！"
+                  ls -la app/build/outputs/apk/release/
+                  echo "Release APK大小: $(du -h app/build/outputs/apk/release/app-release-unsigned.apk)"
+              else
+                  echo "❌ Release APK构建失败！"
+                  echo "尝试构建Debug版本作为备选..."
+                  ./gradlew assembleDebug
+                  if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+                      echo "✅ Debug APK构建成功！"
+                      ls -la app/build/outputs/apk/debug/
+                      echo "Debug APK大小: $(du -h app/build/outputs/apk/debug/app-debug.apk)"
+                  else
+                      echo "❌ 所有构建都失败了！"
+                      exit 1
+                  fi
+              fi
+              
+              # 回到项目根目录
+              cd ../..
               
               # 如果生成了AAB文件，转换为APK
               if [ -f "platforms/android/app/build/outputs/bundle/release/app-release.aab" ]; then
@@ -389,6 +410,7 @@ jobs:
                   
                   echo "APK file created: app-release.apk"
                   ls -la app-release.apk
+                  echo "APK文件大小: $(du -h app-release.apk)"
               fi
               
               # 签名APK文件
@@ -420,6 +442,14 @@ jobs:
                   # 检查是否包含视频资源
                   echo "Checking for video resources in APK:"
                   unzip -l thecodexwalker-release.apk | grep -i "\.mp4\|\.webm\|\.ogg" || echo "No video files found"
+                  
+                  # 检查是否包含HTML文件
+                  echo "Checking for HTML files in APK:"
+                  unzip -l thecodexwalker-release.apk | grep -i "\.html" || echo "No HTML files found"
+                  
+                  # 检查是否包含CSS和JS文件
+                  echo "Checking for CSS and JS files in APK:"
+                  unzip -l thecodexwalker-release.apk | grep -i "\.css\|\.js" || echo "No CSS/JS files found"
                   
               else
                   echo "No APK file found for signing"
