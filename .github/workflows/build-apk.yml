@@ -350,6 +350,11 @@ jobs:
                   echo "✅ Release APK构建成功！"
                   ls -la app/build/outputs/apk/release/
                   echo "Release APK大小: $(du -h app/build/outputs/apk/release/app-release-unsigned.apk)"
+                  
+                  # 将APK复制到项目根目录，方便后续步骤使用
+                  cp app/build/outputs/apk/release/app-release-unsigned.apk ../../app-release-unsigned.apk
+                  echo "APK已复制到项目根目录: ../../app-release-unsigned.apk"
+                  ls -la ../../app-release-unsigned.apk
               else
                   echo "❌ Release APK构建失败！"
                   echo "尝试构建Debug版本作为备选..."
@@ -358,6 +363,10 @@ jobs:
                       echo "✅ Debug APK构建成功！"
                       ls -la app/build/outputs/apk/debug/
                       echo "Debug APK大小: $(du -h app/build/outputs/apk/debug/app-debug.apk)"
+                      
+                      # 将Debug APK也复制到根目录
+                      cp app/build/outputs/apk/debug/app-debug.apk ../../app-debug.apk
+                      echo "Debug APK已复制到项目根目录: ../../app-debug.apk"
                   else
                       echo "❌ 所有构建都失败了！"
                       exit 1
@@ -414,10 +423,10 @@ jobs:
               fi
               
               # 签名APK文件
-              if [ -f "app-release.apk" ]; then
+              if [ -f "app-release-unsigned.apk" ]; then
                   echo "Signing APK file..."
                   keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-                  jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 -keystore my-release-key.keystore -storepass android -keypass android app-release.apk alias_name
+                  jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 -keystore my-release-key.keystore -storepass android -keypass android app-release-unsigned.apk alias_name
                   
                   # 检查zipalign是否可用
                   echo "Checking zipalign availability:"
@@ -426,7 +435,7 @@ jobs:
                   
                   # 使用完整路径运行zipalign
                   echo "Running zipalign with full path..."
-                  $ANDROID_HOME/build-tools/32.0.0/zipalign -v 4 app-release.apk thecodexwalker-release.apk
+                  $ANDROID_HOME/build-tools/32.0.0/zipalign -v 4 app-release-unsigned.apk thecodexwalker-release.apk
                   echo "Signed APK created: thecodexwalker-release.apk"
                   
                   # 检查最终文件大小和内容
@@ -451,8 +460,16 @@ jobs:
                   echo "Checking for CSS and JS files in APK:"
                   unzip -l thecodexwalker-release.apk | grep -i "\.css\|\.js" || echo "No CSS/JS files found"
                   
+              elif [ -f "app-debug.apk" ]; then
+                  echo "使用Debug APK进行签名..."
+                  cp app-debug.apk thecodexwalker-debug.apk
+                  echo "Debug APK已复制: thecodexwalker-debug.apk"
+                  ls -la thecodexwalker-debug.apk
+                  echo "Debug APK大小: $(du -h thecodexwalker-debug.apk)"
               else
                   echo "No APK file found for signing"
+                  echo "当前目录文件列表:"
+                  ls -la
                   exit 1
               fi
               
