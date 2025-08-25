@@ -338,6 +338,10 @@ jobs:
               ls -la www/
               echo "www目录大小: $(du -sh www/)"
               
+              # 清理之前的构建
+              echo "清理之前的构建..."
+              rm -rf platforms/android/app/build/
+              
               # 使用Cordova构建，这是最可靠的方法
               echo "使用Cordova构建Release APK..."
               cordova build android --release --verbose
@@ -355,12 +359,24 @@ jobs:
                   # 验证APK文件完整性
                   echo "验证APK文件完整性..."
                   file platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
-                  unzip -t platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk | head -10
+                  
+                  # 检查ZIP结构
+                  echo "检查ZIP结构..."
+                  unzip -t platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+                  
+                  # 检查APK内容
+                  echo "检查APK内容..."
+                  unzip -l platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk | head -20
                   
                   # 将APK复制到项目根目录
                   cp platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk app-release-unsigned.apk
                   echo "APK已复制到项目根目录"
                   ls -la app-release-unsigned.apk
+                  
+                  # 验证复制的文件
+                  echo "验证复制的APK文件..."
+                  file app-release-unsigned.apk
+                  unzip -t app-release-unsigned.apk
                   
               elif [ -f "platforms/android/app/build/outputs/bundle/release/app-release.aab" ]; then
                   echo "✅ AAB文件构建成功，转换为APK..."
@@ -378,6 +394,11 @@ jobs:
                   echo "AAB转换为APK完成"
                   ls -la app-release.apk
                   
+                  # 验证转换后的APK
+                  echo "验证转换后的APK..."
+                  file app-release.apk
+                  unzip -t app-release.apk
+                  
               else
                   echo "❌ 构建失败，尝试Debug版本..."
                   cordova build android --debug --verbose
@@ -386,6 +407,11 @@ jobs:
                       echo "✅ Debug APK构建成功！"
                       ls -la platforms/android/app/build/outputs/apk/debug/
                       echo "Debug APK大小: $(du -h platforms/android/app/build/outputs/apk/debug/app-debug.apk)"
+                      
+                      # 验证Debug APK
+                      echo "验证Debug APK..."
+                      file platforms/android/app/build/outputs/apk/debug/app-debug.apk
+                      unzip -t platforms/android/app/build/outputs/apk/debug/app-debug.apk
                       
                       # 复制Debug APK
                       cp platforms/android/app/build/outputs/apk/debug/app-debug.apk app-debug.apk
@@ -427,7 +453,11 @@ jobs:
                   # 最终验证
                   echo "最终验证APK..."
                   file thecodexwalker-release.apk
-                  unzip -t thecodexwalker-release.apk | head -20
+                  unzip -t thecodexwalker-release.apk
+                  
+                  # 检查APK内容
+                  echo "检查最终APK内容..."
+                  unzip -l thecodexwalker-release.apk | head -20
                   
               elif [ -f "app-release.apk" ]; then
                   echo "🔐 签名转换后的APK..."
@@ -445,6 +475,11 @@ jobs:
                   mv app-release.apk thecodexwalker-release.apk
                   echo "✅ 签名完成: thecodexwalker-release.apk"
                   
+                  # 验证最终APK
+                  echo "验证最终APK..."
+                  file thecodexwalker-release.apk
+                  unzip -t thecodexwalker-release.apk
+                  
               elif [ -f "app-debug.apk" ]; then
                   echo "🔐 签名Debug APK..."
                   
@@ -461,6 +496,11 @@ jobs:
                   mv app-debug.apk thecodexwalker-debug.apk
                   echo "✅ Debug APK签名完成: thecodexwalker-debug.apk"
                   
+                  # 验证最终APK
+                  echo "验证最终APK..."
+                  file thecodexwalker-debug.apk
+                  unzip -t thecodexwalker-debug.apk
+                  
               else
                   echo "❌ 没有找到可签名的APK文件"
                   echo "当前目录文件列表:"
@@ -475,11 +515,21 @@ jobs:
                   echo "文件: thecodexwalker-release.apk"
                   echo "大小: $(du -h thecodexwalker-release.apk)"
                   echo "类型: $(file thecodexwalker-release.apk)"
+                  
+                  # 最终ZIP结构验证
+                  echo "最终ZIP结构验证..."
+                  unzip -t thecodexwalker-release.apk
+                  
               elif [ -f "thecodexwalker-debug.apk" ]; then
                   echo "✅ Debug APK生成成功！"
                   echo "文件: thecodexwalker-debug.apk"
                   echo "大小: $(du -h thecodexwalker-debug.apk)"
                   echo "类型: $(file thecodexwalker-debug.apk)"
+                  
+                  # 最终ZIP结构验证
+                  echo "最终ZIP结构验证..."
+                  unzip -t thecodexwalker-debug.apk
+                  
               else
                   echo "❌ 没有生成有效的APK文件"
                   exit 1
