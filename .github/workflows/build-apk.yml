@@ -351,10 +351,20 @@ jobs:
                   ls -la app/build/outputs/apk/release/
                   echo "Release APK大小: $(du -h app/build/outputs/apk/release/app-release-unsigned.apk)"
                   
+                  # 验证APK文件完整性
+                  echo "验证APK文件完整性..."
+                  file app/build/outputs/apk/release/app-release-unsigned.apk
+                  unzip -t app/build/outputs/apk/release/app-release-unsigned.apk | head -10
+                  
                   # 将APK复制到项目根目录，方便后续步骤使用
                   cp app/build/outputs/apk/release/app-release-unsigned.apk ../../app-release-unsigned.apk
                   echo "APK已复制到项目根目录: ../../app-release-unsigned.apk"
                   ls -la ../../app-release-unsigned.apk
+                  
+                  # 验证复制的文件
+                  echo "验证复制的APK文件..."
+                  file ../../app-release-unsigned.apk
+                  echo "复制的APK大小: $(du -h ../../app-release-unsigned.apk)"
               else
                   echo "❌ Release APK构建失败！"
                   echo "尝试构建Debug版本作为备选..."
@@ -363,6 +373,11 @@ jobs:
                       echo "✅ Debug APK构建成功！"
                       ls -la app/build/outputs/apk/debug/
                       echo "Debug APK大小: $(du -h app/build/outputs/apk/debug/app-debug.apk)"
+                      
+                      # 验证Debug APK文件完整性
+                      echo "验证Debug APK文件完整性..."
+                      file app/build/outputs/apk/debug/app-debug.apk
+                      unzip -t app/build/outputs/apk/debug/app-debug.apk | head -10
                       
                       # 将Debug APK也复制到根目录
                       cp app/build/outputs/apk/debug/app-debug.apk ../../app-debug.apk
@@ -425,8 +440,22 @@ jobs:
               # 签名APK文件
               if [ -f "app-release-unsigned.apk" ]; then
                   echo "Signing APK file..."
+                  
+                  # 生成签名密钥
+                  echo "生成签名密钥..."
                   keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+                  
+                  # 验证密钥库
+                  echo "验证密钥库..."
+                  keytool -list -keystore my-release-key.keystore -storepass android
+                  
+                  # 签名APK
+                  echo "开始签名APK..."
                   jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA256 -keystore my-release-key.keystore -storepass android -keypass android app-release-unsigned.apk alias_name
+                  
+                  # 验证签名
+                  echo "验证APK签名..."
+                  jarsigner -verify -verbose -certs app-release-unsigned.apk
                   
                   # 检查zipalign是否可用
                   echo "Checking zipalign availability:"
@@ -438,14 +467,16 @@ jobs:
                   $ANDROID_HOME/build-tools/32.0.0/zipalign -v 4 app-release-unsigned.apk thecodexwalker-release.apk
                   echo "Signed APK created: thecodexwalker-release.apk"
                   
-                  # 检查最终文件大小和内容
+                  # 验证最终APK
+                  echo "验证最终APK文件..."
+                  file thecodexwalker-release.apk
                   echo "Final APK file details:"
                   ls -la thecodexwalker-release.apk
                   echo "APK file size: $(du -h thecodexwalker-release.apk | cut -f1)"
                   
-                  # 检查APK内容
-                  echo "APK contents:"
-                  unzip -l thecodexwalker-release.apk | head -20
+                  # 验证APK完整性
+                  echo "验证APK完整性..."
+                  unzip -t thecodexwalker-release.apk | head -20
                   echo "... (showing first 20 entries)"
                   
                   # 检查是否包含视频资源
@@ -466,6 +497,11 @@ jobs:
                   echo "Debug APK已复制: thecodexwalker-debug.apk"
                   ls -la thecodexwalker-debug.apk
                   echo "Debug APK大小: $(du -h thecodexwalker-debug.apk)"
+                  
+                  # 验证Debug APK
+                  echo "验证Debug APK文件..."
+                  file thecodexwalker-debug.apk
+                  unzip -t thecodexwalker-debug.apk | head -10
               else
                   echo "No APK file found for signing"
                   echo "当前目录文件列表:"
